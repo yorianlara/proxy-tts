@@ -3,7 +3,7 @@ services:
     build: .
     container_name: piper-tts
     ports:
-      - "8000:8000"
+      - "8001:8000"
     volumes:
       - ./voices:/app/voices
     restart: unless-stopped
