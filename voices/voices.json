@@ -1,0 +1,10 @@
+[
+  {
+    "name": "es_ES-carlfm-x_low",
+    "onnx": "es_ES-carlfm-x_low.onnx"
+  },
+  {
+    "name": "es_MX-claude-high",
+    "onnx": "es_MX-claude-high.onnx"
+  }
+]

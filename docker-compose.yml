@@ -1,16 +1,9 @@
 services:
-  tts-proxy:
+  piper-tts:
     build: .
+    container_name: piper-tts
     ports:
       - "8000:8000"
-    environment:
-      - MIMIC3_URL=http://mimic3_tts:59125/api/tts  # Usar nombre del contenedor
     volumes:
-      - ./app:/app
+      - ./voices:/app/voices
     restart: unless-stopped
-    networks:
-      - mimic-tts_default  # Conectar a la misma red de mimic3_tts
-
-networks:
-  mimic-tts_default:
-    external: true
