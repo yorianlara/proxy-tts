@@ -1,5 +1,6 @@
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse
+from pydantic import BaseModel
 from pathlib import Path
 import json
 import wave
@@ -17,7 +18,13 @@ with open(VOICES_FILE, "r", encoding="utf-8") as f:
 
 app = FastAPI(title="Piper TTS API")
 
-def synthesize_text(text: str, voice_name: str) -> Path:
+class TTSRequest(BaseModel):
+    text: str
+    voice: str
+    format: str = "wav"   # wav u ogg
+    speed: float = 1.0    # velocidad de la voz
+
+def synthesize_text_to_wav(text: str, voice_name: str, speed: float) -> Path:
     voice_entry = next((v for v in available_voices if v["name"] == voice_name), None)
     if not voice_entry:
         raise HTTPException(status_code=404, detail=f"Voz '{voice_name}' no encontrada")
@@ -27,6 +34,10 @@ def synthesize_text(text: str, voice_name: str) -> Path:
         raise HTTPException(status_code=404, detail=f"Archivo de voz '{voice_path}' no encontrado")
 
     voice = PiperVoice.load(str(voice_path))
+
+    # Ajuste de velocidad si el modelo lo soporta
+    if hasattr(voice, "speed"):
+        voice.speed = speed
 
     temp_wav = tempfile.NamedTemporaryFile(delete=False, suffix=".wav")
     with wave.open(temp_wav, "wb") as wav_file:
@@ -42,15 +53,11 @@ def convert_wav_to_ogg(wav_path: Path) -> Path:
     ], check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     return Path(temp_ogg.name)
 
-@app.get("/tts")
-def tts(
-    text: str = Query(...),
-    voice: str = Query(...),
-    format: str = Query("wav", regex="^(wav|ogg)$")
-):
+@app.post("/tts")
+def tts(request: TTSRequest):
     try:
-        wav_path = synthesize_text(text, voice)
-        if format == "ogg":
+        wav_path = synthesize_text_to_wav(request.text, request.voice, request.speed)
+        if request.format.lower() == "ogg":
             audio_path = convert_wav_to_ogg(wav_path)
             return FileResponse(path=audio_path, media_type="audio/ogg", filename="output.ogg")
         else:
